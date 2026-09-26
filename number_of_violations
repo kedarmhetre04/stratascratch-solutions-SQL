@@ -1,0 +1,11 @@
+-- Problem: Number of violations
+-- Source: StrataScratch
+
+SELECT 
+    EXTRACT(YEAR FROM inspection_date) AS inspection_year,
+    COUNT(violation_id) AS n_violations
+FROM sf_restaurant_health_violations
+WHERE violation_id IS NOT NULL
+  AND business_name = 'Roxanne Cafe'
+GROUP BY inspection_year
+ORDER BY inspection_year;
