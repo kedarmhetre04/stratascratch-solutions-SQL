@@ -1,0 +1,25 @@
+WITH unique_purchases AS (
+    SELECT DISTINCT
+        user_id,
+        created_at
+    FROM amazon_transactions
+),
+
+ranked AS (
+    SELECT
+        user_id,
+        created_at,
+        ROW_NUMBER() OVER (
+            PARTITION BY user_id
+            ORDER BY created_at
+        ) AS rn
+    FROM unique_purchases
+)
+
+SELECT a.user_id
+FROM ranked a
+JOIN ranked b
+    ON a.user_id = b.user_id
+WHERE a.rn = 1
+  AND b.rn = 2
+  AND b.created_at <= a.created_at + INTERVAL '7 days';
