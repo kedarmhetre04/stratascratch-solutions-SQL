@@ -1,0 +1,14 @@
+-- StrataScratch ID: 10183
+-- Problem: Total Cost Of Orders
+-- Difficulty: Easy
+-- Concepts: JOIN, SUM, GROUP BY, ORDER BY
+
+SELECT
+    orders.cust_id,
+    customers.first_name,
+    SUM(orders.total_order_cost) AS total_order_cost
+FROM customers
+JOIN orders
+    ON customers.id = orders.cust_id
+GROUP BY orders.cust_id, customers.first_name
+ORDER BY customers.first_name;
