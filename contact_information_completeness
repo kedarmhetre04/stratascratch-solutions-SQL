@@ -1,0 +1,13 @@
+-- Problem: Contact Information Completeness
+-- Difficulty: Easy
+-- Concepts: CTE, COUNT, NULL filtering, scalar subquery
+
+WITH null_number AS (
+    SELECT COUNT(*) AS null_count
+    FROM techcorp_workforce
+    WHERE phone_number IS NULL
+)
+
+SELECT
+    (SELECT null_count FROM null_number) * 1.0 / COUNT(*) AS null_phone_ratio
+FROM techcorp_workforce;
