@@ -1,0 +1,11 @@
+-- StrataScratch ID: 2056
+-- Problem: Number of Shipments Per Month
+-- Difficulty: Easy
+-- Concepts: TO_CHAR, COUNT DISTINCT, GROUP BY, ORDER BY
+
+SELECT
+    TO_CHAR(shipment_date, 'YYYY-MM') AS year_month,
+    COUNT(DISTINCT (shipment_id, sub_id)) AS count
+FROM amazon_shipment
+GROUP BY TO_CHAR(shipment_date, 'YYYY-MM')
+ORDER BY year_month;
