@@ -1,0 +1,10 @@
+-- StrataScratch ID: 2168
+-- Problem: Users Missing Phone Numbers
+-- Difficulty: Easy
+-- Concepts: NULL filtering, SELECT, WHERE
+
+SELECT
+    user_id,
+    user_name
+FROM fintech_app_users
+WHERE phone_number IS NULL;
