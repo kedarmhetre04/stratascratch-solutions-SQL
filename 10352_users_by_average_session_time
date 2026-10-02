@@ -1,0 +1,23 @@
+-- StrataScratch ID: 10352
+-- Problem: Users By Average Session Time
+-- Difficulty: Medium
+-- Concepts: CTE, conditional aggregation, DATE, CASE WHEN, MAX, MIN, EXTRACT(EPOCH), AVG, GROUP BY
+
+WITH sessions AS (
+    SELECT
+        user_id,
+        DATE(timestamp) AS session_date,
+        MAX(CASE WHEN action = 'page_load' THEN timestamp END) AS latest_load,
+        MIN(CASE WHEN action = 'page_exit' THEN timestamp END) AS earliest_exit
+    FROM facebook_web_log
+    GROUP BY user_id, DATE(timestamp)
+)
+
+SELECT
+    user_id,
+    AVG(
+        EXTRACT(EPOCH FROM (earliest_exit - latest_load))
+    ) AS avg_session_duration
+FROM sessions
+WHERE latest_load < earliest_exit
+GROUP BY user_id;
