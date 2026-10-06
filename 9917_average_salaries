@@ -1,0 +1,21 @@
+-- StrataScratch ID: 9917
+-- Problem: Average Salaries
+-- Difficulty: Easy
+-- Concepts: CTE, AVG, GROUP BY, JOIN
+
+WITH avg_dept_salary AS (
+    SELECT
+        AVG(salary) AS avg_salary,
+        department
+    FROM employee
+    GROUP BY department
+)
+
+SELECT
+    employee.department,
+    employee.first_name,
+    employee.salary,
+    avg_dept_salary.avg_salary
+FROM employee
+JOIN avg_dept_salary
+    ON employee.department = avg_dept_salary.department;
