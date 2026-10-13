@@ -1,0 +1,10 @@
+-- StrataScratch ID: 10127
+-- Problem: Calculate Samantha's and Lisa's Total Sales Revenue
+-- Difficulty: Easy
+-- Concepts: SUM, WHERE, OR
+
+SELECT
+    SUM(sales_revenue) AS total_revenue
+FROM sales_performance
+WHERE salesperson = 'Samantha'
+    OR salesperson = 'Lisa';
