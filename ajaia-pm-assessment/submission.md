@@ -1,6 +1,6 @@
 # SidelineReel: Product Manager Assessment
 **Candidate:** Kedar Mhetre · kedar.mhetre04@gmail.com
-**Prototype:** [PROTOTYPE LINK] · **Video:** [VIDEO LINK]
+**Prototype:** https://claude.ai/artifact/HzT8hSw7Fa4DZC8LCTGkzB · **Video:** [VIDEO LINK]
 
 ---
 
@@ -173,7 +173,7 @@ Examples: the opposing team's #14 gets tagged as our #14. Digit pairs we didn't 
 
 ## Task 3: Prototype
 
-**Link:** [PROTOTYPE LINK] (single self-contained HTML file: `ajaia-pm-assessment/prototype.html`, opens in any browser)
+**Link:** https://claude.ai/artifact/HzT8hSw7Fa4DZC8LCTGkzB (single self-contained HTML file: `ajaia-pm-assessment/prototype.html`, opens in any browser)
 
 It covers the three steps that matter, using sample data for a Ridgeline U12 roster that has the real ticket pairs (#4 Maya / #14 Sofia, #1 / #11, #12 / #21):
 1. **Routing**: what the pipeline does with one game's clips. Confusable pairs are computed live from the roster, and each clip is routed Auto / Coach check / Team recap only. Two threshold sliders show the trade-off between coach workload and accuracy.
