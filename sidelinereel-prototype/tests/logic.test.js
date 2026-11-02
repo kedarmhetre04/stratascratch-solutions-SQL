@@ -89,4 +89,9 @@ t('Correction rate counts reassign + unidentifiable only', () => {
   assert.strictEqual(p.stats.reviewed, 3);
   assert.strictEqual(p.stats.corrections, 2);
 });
+t('Guard: confirm on clip with no roster match stays unresolved', () => {
+  const p = L.computePublishPlan(g, { c08: { action: 'confirm' } });
+  assert.strictEqual(byId(p, 'c08').status, 'unresolved');
+  assert.ok(!p.recap.clipIds.includes('c08'));
+});
 console.log(`\n${n} tests passed`);

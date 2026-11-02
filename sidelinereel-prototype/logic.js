@@ -78,8 +78,10 @@
         status = 'unidentifiable';
         playerId = null;
       } else {
-        status = 'verified';
         playerId = d.action === 'confirm' ? det.suggestedPlayerId : d.playerId;
+        // Guard: a decision that doesn't resolve to a real roster player stays unresolved (never publishes).
+        if (!game.roster.some((p) => p.id === playerId)) { status = 'unresolved'; playerId = null; }
+        else status = 'verified';
       }
       return Object.assign({}, clip, det, { flagged, status, playerId, decision: d || null });
     });
