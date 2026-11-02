@@ -1,0 +1,375 @@
+<title>SidelineReel Confident Tagging</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a touchline scoreboard bar on top, three views of one game underneath (parent, coach, pipeline). */
+:root{
+  --bg:#F3F5F1; --surface:#FFFFFF; --ink:#15212B; --muted:#5B6B70; --line:#D9DFD8;
+  --accent:#1D6B57; --accent-ink:#FFFFFF; --accent-soft:#DCEDE6;
+  --review:#A86A00; --review-soft:#FBEFD6; --bad:#B23A26; --bad-soft:#F9E1DB; --neutral-soft:#E7EAEA;
+  --pitch:#2F7A4F; --pitch2:#348556; --team:#1C3557; --opp:#D9752B; --occluder:#C99A7A; --numfill:#FFFFFF;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1619; --surface:#172126; --ink:#E6ECE8; --muted:#97A6A6; --line:#2A373C;
+  --accent:#4FB394; --accent-ink:#0C1A15; --accent-soft:#1B3A31;
+  --review:#E5A53A; --review-soft:#3A2D14; --bad:#F07F68; --bad-soft:#3C1E18; --neutral-soft:#223035;
+  --pitch:#1F5536; --pitch2:#235D3B; --team:#2C4D7A; --opp:#C9692A; --occluder:#A97E62; --numfill:#F4F4F4; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1619; --surface:#172126; --ink:#E6ECE8; --muted:#97A6A6; --line:#2A373C;
+  --accent:#4FB394; --accent-ink:#0C1A15; --accent-soft:#1B3A31;
+  --review:#E5A53A; --review-soft:#3A2D14; --bad:#F07F68; --bad-soft:#3C1E18; --neutral-soft:#223035;
+  --pitch:#1F5536; --pitch2:#235D3B; --team:#2C4D7A; --opp:#C9692A; --occluder:#A97E62; --numfill:#F4F4F4; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:980px;margin:0 auto;display:grid;gap:18px}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:2rem} h2{font-size:1.45rem} h3{font-size:1.1rem}
+p{margin:0}
+.eyebrow{font-size:.74rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+.game{font-family:var(--display);font-size:1.05rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.score{background:var(--ink);color:var(--bg);padding:2px 10px;border-radius:4px;font-family:var(--mono);font-size:.9rem}
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap}
+nav.tabs button{font:600 .95rem var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:6px;cursor:pointer;display:flex;gap:8px;align-items:center}
+nav.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.badge{font-family:var(--mono);font-size:.75rem;background:var(--review);color:var(--surface);border-radius:10px;padding:0 7px;min-width:20px;text-align:center}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px;display:grid;gap:14px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.lede{color:var(--muted);max-width:68ch}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{font:600 .88rem var(--body);border:0;background:var(--surface);color:var(--ink);padding:7px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg button.bad[aria-pressed="true"]{background:var(--bad);color:var(--surface)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 .85rem var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:4px 10px;border-radius:14px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.chip .mono{font-size:.78rem;opacity:.8}
+
+/* parent reel */
+.phone{max-width:420px;width:100%;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--bg)}
+.phone .hero{position:relative;background:var(--pitch);aspect-ratio:16/10;max-width:100%;display:grid;place-items:center}
+.phone .hero svg{height:86%}
+.hero .play{position:absolute;left:12px;bottom:10px;background:rgba(0,0,0,.55);color:#fff;font:600 .8rem var(--body);padding:3px 9px;border-radius:12px}
+.phone .body{padding:14px;display:grid;gap:10px}
+.clip{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px}
+.clip.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.clip .thumb{width:64px;height:48px;border-radius:5px;background:var(--pitch);display:grid;place-items:center;overflow:hidden}
+.clip .thumb svg{height:44px}
+.clip .meta{min-width:0}
+.clip .meta strong{display:block;font-weight:600}
+.clip .meta small{color:var(--muted)}
+.truth{display:inline-block;margin-top:2px;font-size:.75rem;font-weight:600;color:var(--bad)}
+.btn{font:600 .85rem var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 10px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.btn.flag{color:var(--bad);border-color:var(--bad)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.note{font-size:.88rem;padding:8px 10px;border-radius:6px;background:var(--neutral-soft);color:var(--ink)}
+.note.bad{background:var(--bad-soft);color:var(--bad)}
+.note.review{background:var(--review-soft);color:var(--review)}
+.two{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:20px;align-items:start}
+.side{display:grid;gap:12px;min-width:0}
+.side ul{margin:0;padding-left:18px;color:var(--muted);display:grid;gap:4px}
+
+/* coach */
+.qhead{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.card{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);display:grid}
+.card .crop{background:var(--pitch);display:grid;place-items:center;height:150px;position:relative}
+.card .crop svg{height:140px}
+.card .crop .tag{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.6);color:#fff;font:500 .75rem var(--mono);padding:2px 7px;border-radius:4px}
+.card .crop .flagtag{position:absolute;right:8px;top:8px;background:var(--bad);color:#fff;font:600 .75rem var(--body);padding:2px 8px;border-radius:4px}
+.card .cbody{padding:12px;display:grid;gap:10px}
+.cands{display:grid;gap:6px}
+.cand{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;font:600 .95rem var(--body);border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:9px 12px;border-radius:6px;cursor:pointer}
+.cand:hover{border-color:var(--accent)}
+.cand .num{font-family:var(--display);font-size:1.3rem;min-width:2.2ch;text-align:right}
+.cand.none{font-weight:500;color:var(--muted)}
+.empty{padding:28px;text-align:center;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}
+.done{display:grid;gap:6px}
+.done li{font-size:.9rem}
+
+/* routing */
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.rule{border-left:4px solid var(--line);padding:4px 0 4px 12px;display:grid;gap:2px}
+.rule.auto{border-color:var(--accent)} .rule.review{border-color:var(--review)} .rule.recap{border-color:var(--muted)}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.sliders label{display:grid;gap:4px;font-weight:600;font-size:.9rem}
+.sliders input{width:100%;accent-color:var(--accent)}
+.stats{display:flex;flex-wrap:wrap;gap:18px}
+.stat{display:grid}
+.stat b{font-family:var(--display);font-size:1.8rem;line-height:1}
+.stat span{font-size:.8rem;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:.9rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:.74rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.bar{width:90px;height:6px;background:var(--neutral-soft);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px}
+.bar i{display:block;height:100%;background:var(--ink)}
+.pill{font:600 .78rem var(--body);padding:2px 9px;border-radius:10px;white-space:nowrap}
+.pill.auto{background:var(--accent-soft);color:var(--accent)}
+.pill.review{background:var(--review-soft);color:var(--review)}
+.pill.recap{background:var(--neutral-soft);color:var(--muted)}
+.pairs{display:flex;flex-wrap:wrap;gap:6px}
+.pair{font:500 .8rem var(--mono);background:var(--review-soft);color:var(--review);padding:3px 8px;border-radius:4px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:6px;font-weight:600;font-size:.9rem;max-width:calc(100% - 32px)}
+footer{color:var(--muted);font-size:.82rem}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.clip,.card{transition:opacity .2s}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div style="display:grid;gap:4px">
+      <span class="eyebrow">SidelineReel · prototype · sample data</span>
+      <h1>Confident Tagging</h1>
+      <div class="game"><span>Ridgeline U12 Girls</span><span class="score">3 – 1</span><span>Lakeside FC</span><span class="eyebrow" style="margin-left:4px">Sat · Week 9</span></div>
+    </div>
+    <div class="row">
+      <nav class="tabs" role="tablist" aria-label="Views">
+        <button role="tab" id="tab-parent" data-view="parent">Parent reel</button>
+        <button role="tab" id="tab-coach" data-view="coach">Coach check <span class="badge" id="qcount">0</span></button>
+        <button role="tab" id="tab-routing" data-view="routing">How clips are routed</button>
+      </nav>
+      <button class="btn" id="reset">Reset demo</button>
+    </div>
+  </header>
+
+  <!-- PARENT -->
+  <section class="panel" id="view-parent" role="tabpanel">
+    <div class="row" style="justify-content:space-between">
+      <div style="display:grid;gap:4px">
+        <h2>What a family sees</h2>
+        <p class="lede">Switch between today's tagging and Confident Tagging. Red tags show who is really in the clip. They are for this demo only.</p>
+      </div>
+      <div class="seg" role="group" aria-label="Tagging mode">
+        <button id="mode-today" class="bad">Today</button>
+        <button id="mode-new">With Confident Tagging</button>
+      </div>
+    </div>
+    <div class="chips" id="kidpicker" aria-label="Choose a player"></div>
+    <div class="two">
+      <div class="phone" id="phone"></div>
+      <div class="side" id="parentside"></div>
+    </div>
+  </section>
+
+  <!-- COACH -->
+  <section class="panel" id="view-coach" role="tabpanel" hidden>
+    <div class="qhead">
+      <div style="display:grid;gap:4px">
+        <h2 id="qtitle">Check clips before tonight's reels</h2>
+        <p class="lede">These clips have jersey numbers that look like another player's. Tap who it is. Reels send at 7:00 AM. Anything you haven't checked by 6:00 AM is left out of the reel and the system won't guess.</p>
+      </div>
+      <span class="note review" id="qtime"></span>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div id="donelist"></div>
+  </section>
+
+  <!-- ROUTING -->
+  <section class="panel" id="view-routing" role="tabpanel" hidden>
+    <div style="display:grid;gap:4px">
+      <h2>How each clip is routed</h2>
+      <p class="lede">Confusable pairs are computed from the roster when it's saved. Each clip from this game is then routed by the number we read, how confident we are, and whether that number has a look-alike on the roster.</p>
+    </div>
+    <div class="rules">
+      <div class="rule auto"><h3>Auto</h3><small>Confident and no look-alike number on the roster. Goes straight to the kid's reel.</small></div>
+      <div class="rule review"><h3>Coach check</h3><small>Look-alike number on the roster, or medium confidence. Held until a coach taps who it is.</small></div>
+      <div class="rule recap"><h3>Team recap only</h3><small>Low confidence or not on our roster. Shown in the recap with no name.</small></div>
+    </div>
+    <div style="display:grid;gap:6px">
+      <span class="eyebrow">Look-alike numbers on this roster</span>
+      <div class="pairs" id="pairs"></div>
+    </div>
+    <div class="sliders">
+      <label for="autoT">Auto threshold <span class="mono" id="autoV"></span>
+        <input type="range" id="autoT" min="0.70" max="0.99" step="0.01"></label>
+      <label for="lowT">Low-confidence cut-off <span class="mono" id="lowV"></span>
+        <input type="range" id="lowT" min="0.30" max="0.69" step="0.01"></label>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Min</th><th>Play</th><th>Read as</th><th>Confidence</th><th>Route</th><th>Why</th><th>Really</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+  </section>
+
+  <footer>Prototype for the Ajaia PM assessment. Sample roster and clips are invented to reproduce the support tickets (4 vs 14, 1 vs 11, swapped digits, and an opponent wearing #14).</footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const ROSTER=[
+  {id:'maya',name:'Maya Chen',num:'4'},{id:'sofia',name:'Sofia Alvarez',num:'14'},
+  {id:'lena',name:'Lena Park',num:'1'},{id:'ava',name:'Ava Brooks',num:'11'},
+  {id:'zoe',name:'Zoe Patel',num:'12'},{id:'nora',name:'Nora Kim',num:'21'},
+  {id:'iris',name:'Iris Wong',num:'7'},{id:'ruby',name:'Ruby Diaz',num:'9'},
+  {id:'hana',name:'Hana Lee',num:'23'},{id:'elle',name:'Elle Moss',num:'5'}];
+const OPP={name:'a Lakeside FC player'};
+// truth = who is really in the clip; printed = number actually on the shirt; occl/blur describe the frame
+const CLIPS=[
+  {id:'c1',min:12,play:'Goal',read:'14',conf:.88,truth:'sofia',printed:'14',blur:.6},
+  {id:'c2',min:19,play:'Goal',read:'4',conf:.91,truth:'sofia',printed:'14',occl:true},
+  {id:'c3',min:24,play:'Save',read:'23',conf:.96,truth:'hana',printed:'23'},
+  {id:'c4',min:31,play:'Assist',read:'11',conf:.86,truth:'ava',printed:'11',blur:1.2},
+  {id:'c5',min:38,play:'Tackle',read:'9',conf:.95,truth:'ruby',printed:'9'},
+  {id:'c6',min:44,play:'Shot on goal',read:'5',conf:.93,truth:'elle',printed:'5'},
+  {id:'c7',min:52,play:'Goal',read:'21',conf:.90,truth:'nora',printed:'21',blur:1.6},
+  {id:'c8',min:57,play:'Save',read:'7',conf:.44,truth:'iris',printed:'7',blur:3},
+  {id:'c9',min:63,play:'Dribble past two',read:'4',conf:.94,truth:'maya',printed:'4'},
+  {id:'c10',min:70,play:'Shot on goal',read:'14',conf:.89,truth:'opp',printed:'14',opp:true},
+  {id:'c11',min:76,play:'Tackle',read:'30',conf:.92,truth:'opp',printed:'30',opp:true},
+  {id:'c12',min:81,play:'Goal',read:'23',conf:.97,truth:'hana',printed:'23'}];
+
+const SIM=[['1','7'],['3','8'],['6','8'],['5','6'],['0','8']];
+const sim=(x,y)=>SIM.some(([p,q])=>(p===x&&q===y)||(p===y&&q===x));
+function lookAlike(a,b){
+  if(a===b) return null;
+  if(a.length!==b.length){const [s,l]=a.length<b.length?[a,b]:[b,a];return (l.startsWith(s)||l.endsWith(s))?'digit hidden':null;}
+  if(a.length===2&&a[0]===b[1]&&a[1]===b[0]) return 'swapped digits';
+  let d=0;for(let i=0;i<a.length;i++){if(a[i]!==b[i]){if(!sim(a[i],b[i]))return null;d++;}}
+  return d?'look-alike digits':null;
+}
+const kidByNum=n=>ROSTER.find(k=>k.num===n);
+const kidById=id=>ROSTER.find(k=>k.id===id);
+const neighbours=n=>ROSTER.filter(k=>lookAlike(n,k.num)).map(k=>({kid:k,why:lookAlike(n,k.num)}));
+const who=id=>id==='opp'?OPP.name:(k=>`${k.name.split(' ')[0]} #${k.num}`)(kidById(id));
+
+const DEFAULT={view:'parent',mode:'today',kid:'maya',autoT:.85,lowT:.55,decisions:{},flags:{}};
+let S=JSON.parse(JSON.stringify(DEFAULT));
+
+function route(c){
+  const k=kidByNum(c.read);
+  if(!k) return {r:'recap',why:'Not on our roster'};
+  if(c.conf<S.lowT) return {r:'recap',why:'Low confidence'};
+  const nb=neighbours(c.read);
+  if(nb.length) return {r:'review',why:'Looks like '+nb.map(n=>'#'+n.kid.num+' ('+n.why+')').join(', ')};
+  if(c.conf<S.autoT) return {r:'review',why:'Medium confidence'};
+  return {r:'auto',why:'Confident, no look-alike'};
+}
+const candidates=c=>{const k=kidByNum(c.read);return [k,...neighbours(c.read).map(n=>n.kid)].filter(Boolean);};
+function owner(c){ // who the clip is assigned to with Confident Tagging (null = nobody)
+  if(S.flags[c.id]) return null;
+  if(S.decisions[c.id]!==undefined) return S.decisions[c.id]==='none'?null:S.decisions[c.id];
+  const r=route(c).r; return r==='auto'?kidByNum(c.read).id:null;
+}
+const inQueue=c=>S.flags[c.id]||(route(c).r==='review'&&S.decisions[c.id]===undefined);
+
+function jersey(c,{big}={}){
+  const fill=c.opp?'var(--opp)':'var(--team)';
+  const blur=c.blur?`style="filter:blur(${big?c.blur:c.blur*.6}px)"`:'';
+  const fs=c.printed.length>1?40:46;
+  const arm=c.occl?'<rect x="24" y="56" width="40" height="22" rx="11" fill="var(--occluder)" transform="rotate(-12 44 67)"/>':'';
+  return `<svg viewBox="0 0 120 120" role="img" aria-label="Jersey crop">
+    <path d="M30 18 L48 10 Q60 22 72 10 L90 18 L112 42 L97 55 L90 48 L90 114 L30 114 L30 48 L23 55 L8 42 Z" fill="${fill}"/>
+    <text x="60" y="88" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="${fs}" fill="var(--numfill)" ${blur}>${c.printed}</text>${arm}</svg>`;
+}
+
+const $=id=>document.getElementById(id);
+let toastT;function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2200);}
+
+function renderTabs(){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===S.view));
+  ['parent','coach','routing'].forEach(v=>$('view-'+v).hidden=v!==S.view);
+  $('qcount').textContent=CLIPS.filter(inQueue).length;
+}
+
+function renderParent(){
+  $('mode-today').setAttribute('aria-pressed',S.mode==='today');
+  $('mode-new').setAttribute('aria-pressed',S.mode==='new');
+  $('kidpicker').innerHTML=ROSTER.map(k=>`<button class="chip" data-kid="${k.id}" aria-pressed="${k.id===S.kid}">${k.name.split(' ')[0]} <span class="mono">#${k.num}</span></button>`).join('');
+  const kid=kidById(S.kid);
+  let reel;
+  if(S.mode==='today') reel=CLIPS.filter(c=>c.conf>=.5&&kidByNum(c.read)?.id===kid.id);
+  else reel=CLIPS.filter(c=>owner(c)===kid.id);
+  const order=S.mode==='today'?[...reel].sort((a,b)=>(b.play==='Goal')-(a.play==='Goal')||a.min-b.min):reel;
+  const thumb=order[0];
+  const wrongThumb=thumb&&thumb.truth!==kid.id;
+  const pending=S.mode==='new'?CLIPS.filter(c=>inQueue(c)&&candidates(c).some(k=>k.id===kid.id)).length:0;
+  $('phone').innerHTML=`
+    <div class="hero">${thumb?jersey(thumb,{big:true}):'<span style="color:#fff">No highlights yet</span>'}
+      ${thumb?`<span class="play">▶ ${kid.name.split(' ')[0]}'s Week 9 reel · ${reel.length} clip${reel.length===1?'':'s'}</span>`:''}</div>
+    <div class="body">
+      <div><span class="eyebrow">Reel for</span><h3>${kid.name} · #${kid.num}</h3></div>
+      ${wrongThumb?`<div class="note bad">The cover image of this reel is ${who(thumb.truth)}, not ${kid.name.split(' ')[0]}.</div>`:''}
+      ${reel.map(c=>{const wrong=c.truth!==kid.id;return `
+        <div class="clip ${wrong?'wrong':''}">
+          <div class="thumb">${jersey(c)}</div>
+          <div class="meta"><strong>${c.play}</strong><small>${c.min}' vs Lakeside FC</small>
+            ${wrong?`<span class="truth">Demo: this is really ${who(c.truth)}</span>`:''}</div>
+          ${S.mode==='new'?`<button class="btn flag" data-flag="${c.id}">Not my kid</button>`:'<span></span>'}
+        </div>`}).join('')||'<div class="empty">No clips in this reel this week. The team recap still arrives.</div>'}
+      ${pending?`<div class="note">More highlights may be added after your coach reviews this week's clips.</div>`:''}
+    </div>`;
+  const wrongCount=reel.filter(c=>c.truth!==kid.id).length;
+  $('parentside').innerHTML=S.mode==='today'?`
+    <div class="note bad"><b>Today:</b> the clip goes to whichever number we read with the highest score, even when that number has a look-alike on the roster.</div>
+    <ul><li>Maya's reel opens on Sofia's goal (#14 read as #4 because an arm covered the "1"). This is the Ridgeline ticket.</li>
+    <li>Sofia's reel gets a Lakeside player who also wears #14.</li>
+    <li>Ava #11 and Lena #1 can swap clips the same way.</li></ul>
+    <p class="lede">${wrongCount?`${wrongCount} clip${wrongCount>1?'s':''} in this reel ${wrongCount>1?'show':'shows'} another child.`:'This reel happens to be right this week.'} Switch to <b>With Confident Tagging</b>.</p>`:`
+    <div class="note"><b>With Confident Tagging:</b> clips with a look-alike number wait for a coach tap. Until then they are left out, and the cover image only uses trusted clips.</div>
+    <ul><li>Open <b>Coach check</b> to confirm the held clips. They appear here straight away.</li>
+    <li>Tap <b>Not my kid</b> to remove a clip for everyone. It goes back to the coach.</li></ul>`;
+}
+
+function renderCoach(){
+  const q=CLIPS.filter(inQueue);
+  $('qtime').textContent=q.length?`${q.length} clip${q.length>1?'s':''} · about ${q.length*7} seconds`:'All checked';
+  $('cards').innerHTML=q.length?q.map(c=>{
+    const cands=candidates(c);
+    return `<article class="card">
+      <div class="crop">${jersey(c,{big:true})}<span class="tag">${c.min}' · ${c.play} · read #${c.read} · ${Math.round(c.conf*100)}%</span>
+        ${S.flags[c.id]?'<span class="flagtag">Parent flagged</span>':''}</div>
+      <div class="cbody"><span class="eyebrow">Who is this?</span>
+        <div class="cands">${cands.map(k=>`<button class="cand" data-decide="${c.id}" data-kid="${k.id}"><span>${k.name}</span><span class="num">${k.num}</span></button>`).join('')}
+          <button class="cand none" data-decide="${c.id}" data-kid="none"><span>Neither / other team</span><span></span></button></div>
+      </div></article>`}).join(''):'<div class="empty">Nothing to check. Every reel will send at 7:00 AM with only trusted clips.</div>';
+  const done=CLIPS.filter(c=>S.decisions[c.id]!==undefined&&!S.flags[c.id]);
+  $('donelist').innerHTML=done.length?`<div class="done"><span class="eyebrow">Checked</span><ul>${done.map(c=>`<li>${c.min}' ${c.play}: <b>${S.decisions[c.id]==='none'?'not one of ours':who(S.decisions[c.id])}</b> ${S.decisions[c.id]===c.truth||(S.decisions[c.id]==='none'&&c.truth==='opp')?'':'<span class="truth">(demo: really '+who(c.truth)+')</span>'} <button class="btn" data-undo="${c.id}">Undo</button></li>`).join('')}</ul></div>`:'';
+}
+
+function renderRouting(){
+  $('autoT').value=S.autoT;$('lowT').value=S.lowT;
+  $('autoV').textContent=Math.round(S.autoT*100)+'%';$('lowV').textContent=Math.round(S.lowT*100)+'%';
+  const pairs=[];ROSTER.forEach((a,i)=>ROSTER.slice(i+1).forEach(b=>{const w=lookAlike(a.num,b.num);if(w)pairs.push(`#${a.num} ↔ #${b.num} · ${w}`);}));
+  $('pairs').innerHTML=pairs.map(p=>`<span class="pair">${p}</span>`).join('');
+  const rs=CLIPS.map(c=>({c,...route(c)}));
+  const n=r=>rs.filter(x=>x.r===r).length;
+  const todayWrong=CLIPS.filter(c=>c.conf>=.5&&kidByNum(c.read)&&kidByNum(c.read).id!==c.truth).length;
+  const autoWrong=rs.filter(x=>x.r==='auto'&&kidByNum(x.c.read).id!==x.c.truth).length;
+  $('stats').innerHTML=[[n('auto'),'Auto'],[n('review'),'Coach check'],[n('recap'),'Recap only'],
+    ['~'+n('review')*7+'s','Coach time this game'],[todayWrong,'Wrong-kid clips today'],[autoWrong,'Wrong-kid clips auto-sent now']]
+    .map(([v,l])=>`<div class="stat"><b class="mono">${v}</b><span>${l}</span></div>`).join('');
+  $('rows').innerHTML=rs.map(({c,r,why})=>`<tr><td class="mono">${c.min}'</td><td>${c.play}</td><td class="mono">#${c.read}</td>
+    <td><span class="bar"><i style="width:${c.conf*100}%"></i></span><span class="mono">${Math.round(c.conf*100)}%</span></td>
+    <td><span class="pill ${r}">${r==='auto'?'Auto':r==='review'?'Coach check':'Recap only'}</span></td><td>${why}</td><td>${who(c.truth)}</td></tr>`).join('');
+}
+
+function render(){renderTabs();if(S.view==='parent')renderParent();if(S.view==='coach')renderCoach();if(S.view==='routing')renderRouting();}
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.view){S.view=t.dataset.view;}
+  else if(t.id==='mode-today'){S.mode='today';}
+  else if(t.id==='mode-new'){S.mode='new';}
+  else if(t.id==='reset'){S=JSON.parse(JSON.stringify(DEFAULT));toast('Demo reset');}
+  else if(t.dataset.flag){S.flags[t.dataset.flag]=true;toast('Removed from this reel. Sent to the coach to check.');}
+  else if(t.dataset.decide){const id=t.dataset.decide,k=t.dataset.kid;S.decisions[id]=k;delete S.flags[id];
+    toast(k==='none'?'Kept out of every personal reel':`Added to ${kidById(k).name.split(' ')[0]}'s reel`);}
+  else if(t.dataset.undo){delete S.decisions[t.dataset.undo];}
+  else if(t.dataset.kid&&t.classList.contains('chip')){S.kid=t.dataset.kid;}
+  else return;
+  render();
+});
+['autoT','lowT'].forEach(id=>$(id).addEventListener('input',e=>{S[id]=+e.target.value;if(S.lowT>=S.autoT)S.lowT=Math.max(.3,S.autoT-.01);render();}));
+render();
+</script>
